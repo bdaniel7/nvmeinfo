@@ -536,6 +536,7 @@ function Get-DevicePropertySet {
         Address      = $null
         BiosName     = ''
         Location     = ''
+        LocationPaths = @()
         DeviceDesc   = ''
         Service      = ''
         BaseClass    = $null
@@ -554,6 +555,7 @@ function Get-DevicePropertySet {
             'DEVPKEY_Device_Address',
             'DEVPKEY_Device_BiosDeviceName',
             'DEVPKEY_Device_LocationInfo',
+            'DEVPKEY_Device_LocationPaths',
             'DEVPKEY_Device_DeviceDesc',
             'DEVPKEY_Device_Service',
             'DEVPKEY_PciDevice_BaseClass',
@@ -587,6 +589,11 @@ function Get-DevicePropertySet {
                 }
                 'DEVPKEY_Device_LocationInfo' {
                     if ($null -ne $property.Data) { $set.Location = [string]$property.Data }
+                }
+                'DEVPKEY_Device_LocationPaths' {
+                    if ($null -ne $property.Data) {
+                        $set.LocationPaths = @($property.Data | ForEach-Object { [string]$_ })
+                    }
                 }
                 'DEVPKEY_Device_DeviceDesc' {
                     if ($null -ne $property.Data) { $set.DeviceDesc = [string]$property.Data }
@@ -687,6 +694,7 @@ function Get-DeviceInfo {
         Address      = $properties.Address
         BiosName     = [string]$properties.BiosName
         Location     = [string]$properties.Location
+        LocationPaths = @($properties.LocationPaths)
         BaseClass    = $properties.BaseClass
         SubClass     = $properties.SubClass
         ProgIf       = $properties.ProgIf
@@ -790,6 +798,7 @@ function Get-PciEndpoints {
             Address        = $device.Address
             PciAddress     = (Format-PciAddress $device.Bus $device.DeviceNumber $device.Function)
             Location       = $device.Location
+            LocationPaths  = @($device.LocationPaths)
             BiosName       = $device.BiosName
             LinkSpeed      = $device.LinkSpeed
             LinkWidth      = $device.LinkWidth
@@ -1348,6 +1357,9 @@ function Write-ConsoleReport {
 
             Write-ColorLine ('  [{0}] {1}' -f $drive.DriveNumber, $drive.Model) Gray
             Write-ColorLine $path (Get-ConfidenceColor $drive.Confidence)
+            foreach ($locationPath in @($drive.Controller.LocationPaths)) {
+                Write-ColorLine ('      PnP location: ' + $locationPath) DarkGray
+            }
             Write-ColorLine ('      {0} | {1} | {2} | {3}' -f $serialText, $firmwareText, $drive.Size, $drive.Health) DarkGray
             if (-not [string]::IsNullOrWhiteSpace([string]$drive.MatchReason)) {
                 Write-ColorLine ('      match: ' + $drive.MatchReason) DarkGray
@@ -1502,6 +1514,8 @@ function New-HtmlReport {
             if ($drive.PortAddress) { $pathParts += 'port ' + $drive.PortAddress }
             if ($drive.PortBiosName) { $pathParts += $drive.PortBiosName }
             $pathText = $pathParts -join ' / '
+            $locationPaths = @($drive.Controller.LocationPaths)
+            if ($locationPaths.Count -gt 0) { $pathText += ' / PnP: ' + ($locationPaths -join '; ') }
             if ([string]::IsNullOrWhiteSpace($pathText)) { $pathText = 'not available' }
 
             $health = [string]$drive.Health
@@ -1754,8 +1768,9 @@ function Get-JsonModel {
             $occupants += [ordered]@{
                 name       = [string]$endpoint.Name
                 class      = [string]$endpoint.Class
-                pciAddress = [string]$endpoint.PciAddress
-                link       = [string]$endpoint.Link
+                pciAddress    = [string]$endpoint.PciAddress
+                locationPaths = @($endpoint.LocationPaths)
+                link          = [string]$endpoint.Link
                 isNvme     = [bool]$endpoint.IsNvme
                 driveModel = $driveModel
             }
@@ -1797,8 +1812,9 @@ function Get-JsonModel {
             temperature       = $drive.Temperature
             wear              = $drive.Wear
             powerOnHours      = $drive.PowerOnHours
-            controllerAddress = [string]$drive.ControllerAddress
-            link              = [string]$drive.Link
+            controllerAddress      = [string]$drive.ControllerAddress
+            controllerLocationPaths = @($drive.Controller.LocationPaths)
+            link                    = [string]$drive.Link
             maxLink           = [string]$drive.MaxLink
             portAddress       = [string]$drive.PortAddress
             portBiosName      = [string]$drive.PortBiosName

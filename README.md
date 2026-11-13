@@ -219,6 +219,7 @@ the firmware actually reported.
   summary, not a replacement for the drive vendor's SMART tool.
 - The tool reports what Windows and the firmware expose. It cannot detect a
   drive that is physically installed but disabled in firmware or has no driver.
+- PnP location paths are diagnostic evidence of the Windows device topology. They do not, by themselves, identify a physical motherboard connector or prove which M.2 slot contains a drive.
 - In a virtual machine, SMBIOS slot records and PCI passthrough addresses are
   usually not meaningful.
 
@@ -277,7 +278,8 @@ The script is intentionally a single file and ASCII-only for Windows PowerShell
 - `Add-Type` with a small C# P/Invoke wrapper for `GetSystemFirmwareTable`.
 - `Get-PnpDeviceProperty` for `DEVPKEY_Device_BusNumber` and
   `DEVPKEY_Device_Address`; the address is decoded as
-  `(device << 16) | function`.
+  `(device << 16) | function`. `DEVPKEY_Device_LocationPaths` is retained as
+  additional PnP topology evidence.
 - `DEVPKEY_Device_BiosDeviceName` for the firmware/ACPI path, which is useful
   when explaining a match.
 
