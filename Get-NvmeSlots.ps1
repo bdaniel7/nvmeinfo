@@ -113,6 +113,21 @@ function Format-Link {
     return (($gen + ' ' + $lanes).Trim())
 }
 
+function Format-LinkComparison {
+    param(
+        [object]$CurrentSpeed,
+        [object]$CurrentWidth,
+        [object]$MaximumSpeed,
+        [object]$MaximumWidth
+    )
+
+    $current = Format-Link $CurrentSpeed $CurrentWidth
+    $maximum = Format-Link $MaximumSpeed $MaximumWidth
+    if ([string]::IsNullOrWhiteSpace($current)) { $current = 'unavailable' }
+    if ([string]::IsNullOrWhiteSpace($maximum)) { $maximum = 'unavailable' }
+    return ('{0} / {1}' -f $current, $maximum)
+}
+
 function Format-Column {
     param([string]$Text, [int]$Width)
     if ($null -eq $Text) { $Text = '' }
@@ -776,6 +791,10 @@ function Get-PciEndpoints {
             PciAddress     = (Format-PciAddress $device.Bus $device.DeviceNumber $device.Function)
             Location       = $device.Location
             BiosName       = $device.BiosName
+            LinkSpeed      = $device.LinkSpeed
+            LinkWidth      = $device.LinkWidth
+            MaxLinkSpeed   = $device.MaxLinkSpeed
+            MaxLinkWidth   = $device.MaxLinkWidth
             Link           = (Format-Link $device.LinkSpeed $device.LinkWidth)
             MaxLink        = (Format-Link $device.MaxLinkSpeed $device.MaxLinkWidth)
             IsNvme         = (Test-NvmeController $device)
@@ -1286,7 +1305,7 @@ function Write-ConsoleReport {
             (Format-Column 'Size' 9), `
             (Format-Column 'Slot' 18), `
             (Format-Column 'Address' 9), `
-            (Format-Column 'Link' 12), `
+            (Format-Column 'Current / max' 26), `
             (Format-Column 'Match' 9), `
             (Format-Column 'Health' 9)
         Write-ColorLine $header DarkGray
@@ -1300,7 +1319,7 @@ function Write-ConsoleReport {
                 (Format-Column ([string]$drive.Size) 9), `
                 (Format-Column $slotText 18), `
                 (Format-Column ([string]$drive.ControllerAddress) 9), `
-                (Format-Column ([string]$drive.Link) 12), `
+                (Format-Column (Format-LinkComparison $drive.Controller.LinkSpeed $drive.Controller.LinkWidth $drive.Controller.MaxLinkSpeed $drive.Controller.MaxLinkWidth) 26), `
                 (Format-Column ([string]$drive.Confidence) 9), `
                 (Format-Column ([string]$drive.Health) 9)
             Write-ColorLine $line (Get-ConfidenceColor $drive.Confidence)
@@ -1487,8 +1506,10 @@ function New-HtmlReport {
 
             $health = [string]$drive.Health
             if ([string]::IsNullOrWhiteSpace($health)) { $health = '-' }
-            $link = [string]$drive.Link
-            if ([string]::IsNullOrWhiteSpace($link)) { $link = '-' }
+            $currentLink = [string]$drive.Link
+            if ([string]::IsNullOrWhiteSpace($currentLink)) { $currentLink = 'unavailable' }
+            $maximumLink = [string]$drive.MaxLink
+            if ([string]::IsNullOrWhiteSpace($maximumLink)) { $maximumLink = 'unavailable' }
 
             [void]$nvmeRows.AppendLine('<tr>')
             [void]$nvmeRows.AppendLine('  <td class="num">' + (Html-Encode ([string]$drive.DriveNumber)) + '</td>')
@@ -1496,7 +1517,7 @@ function New-HtmlReport {
             [void]$nvmeRows.AppendLine('  <td>' + (Html-Encode $drive.Size) + '</td>')
             [void]$nvmeRows.AppendLine('  <td>' + (Html-Encode $health) + '</td>')
             [void]$nvmeRows.AppendLine('  <td>' + $slotCell + '</td>')
-            [void]$nvmeRows.AppendLine('  <td><div class="mono">' + (Html-Encode $drive.ControllerAddress) + '</div><div class="muted">' + (Html-Encode $link) + '</div></td>')
+            [void]$nvmeRows.AppendLine('  <td><div class="mono">' + (Html-Encode $drive.ControllerAddress) + '</div><div class="muted">Current: ' + (Html-Encode $currentLink) + '</div><div class="muted">Maximum: ' + (Html-Encode $maximumLink) + '</div></td>')
             [void]$nvmeRows.AppendLine('  <td><div class="mono">' + (Html-Encode $pathText) + '</div><div class="muted">' + (Html-Encode $drive.MatchReason) + '</div></td>')
             [void]$nvmeRows.AppendLine('</tr>')
         }

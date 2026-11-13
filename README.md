@@ -126,6 +126,7 @@ the folder where the command was started.
 
 - **JSON** contains the system/SMBIOS information, every slot with its
   occupants and PCIe/M.2 classification, every NVMe drive, and the unmapped-drive list.
+- Console and HTML drive reports distinguish the negotiated PCIe link from the maximum link capability reported by Windows/device firmware. Either value is shown as unavailable when the corresponding properties are not exposed.
 - **CSV** contains one row per slot occupant, plus one row per empty slot and
   one row per unmapped NVMe drive.
 
