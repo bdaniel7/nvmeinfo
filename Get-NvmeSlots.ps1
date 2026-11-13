@@ -1314,7 +1314,7 @@ function Write-ConsoleReport {
             (Format-Column 'Size' 9), `
             (Format-Column 'Slot' 18), `
             (Format-Column 'Address' 9), `
-            (Format-Column 'Current / max' 26), `
+            (Format-Column 'Current / max' 28), `
             (Format-Column 'Match' 9), `
             (Format-Column 'Health' 9)
         Write-ColorLine $header DarkGray
@@ -1328,7 +1328,7 @@ function Write-ConsoleReport {
                 (Format-Column ([string]$drive.Size) 9), `
                 (Format-Column $slotText 18), `
                 (Format-Column ([string]$drive.ControllerAddress) 9), `
-                (Format-Column (Format-LinkComparison $drive.Controller.LinkSpeed $drive.Controller.LinkWidth $drive.Controller.MaxLinkSpeed $drive.Controller.MaxLinkWidth) 26), `
+                (Format-Column (Format-LinkComparison $drive.Controller.LinkSpeed $drive.Controller.LinkWidth $drive.Controller.MaxLinkSpeed $drive.Controller.MaxLinkWidth) 28), `
                 (Format-Column ([string]$drive.Confidence) 9), `
                 (Format-Column ([string]$drive.Health) 9)
             Write-ColorLine $line (Get-ConfidenceColor $drive.Confidence)
@@ -1336,7 +1336,7 @@ function Write-ConsoleReport {
 
         Write-ColorLine ''
         Write-ColorLine 'Connection paths' Cyan
-        Write-ColorLine ('-' * 114) Cyan
+        Write-ColorLine ('-' * 130) Cyan
 
         foreach ($drive in $drives) {
             $serialText = 'SN not reported'
