@@ -293,6 +293,18 @@ no reflection beyond `GetManifestResourceStream`, which keeps the AOT trimmer
 happy. The two executables share `src\Launcher\Program.cs`; only the report build
 defines `REPORT_MODE`.
 
+### Tests
+
+`tests\Compatibility.Tests.ps1` parses the complete script and checks the pure
+SMBIOS M.2 slot-classification function without enumerating hardware:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\tests\Compatibility.Tests.ps1
+```
+
+The `powershell-compatibility.yml` GitHub Actions workflow runs the same test
+under Windows PowerShell 5.1 and PowerShell 7.
+
 ## Version
 
 1.1
