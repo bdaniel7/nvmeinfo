@@ -187,7 +187,10 @@ The console report has three main parts:
    ports.
 3. A slot matches when its SMBIOS bus/device/function equals one of those ports.
    The nearest port wins. If firmware stores `0xFF` for an unknown bus or
-   device/function, that part is ignored.
+   device/function, that part is ignored. A device/function value of `0` is a
+   valid address (for example `04:00.0`), not a missing value; when both bus and
+   device/function are available, only an exact match is accepted, so a different
+   port on the same bus cannot claim the slot.
 4. Multiple functions of one card (for example, a graphics card plus its HDMI
    audio function) are grouped under the same slot when they share the same
    upstream port.

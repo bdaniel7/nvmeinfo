@@ -377,6 +377,24 @@ function Test-IsM2SlotType {
     return ($TypeCode -ge 0x14 -and $TypeCode -le 0x17)
 }
 
+function Get-SlotAddressFlags {
+    param([int]$Bus, [int]$DevFn)
+
+    # SMBIOS Type 9 stores the address as segment:bus:device.function. A bus of
+    # 0 is a valid bus; only 0xFF means "unknown" (dmidecode treats the address
+    # as unknown only when segment, bus and device/function are all 0xFF).
+    # Device/function is one byte where only 0xFF means unknown, so devfn 0 on
+    # a real bus is a valid address such as 04:00.0. Treat an all-zero pair as
+    # unpopulated, because some firmware leaves the fields blank.
+    $busSpecified = ($Bus -ne 0 -and $Bus -ne 0xFF)
+    $devFnSpecified = ($DevFn -ne 0xFF -and -not ($DevFn -eq 0 -and -not $busSpecified))
+
+    return [pscustomobject]@{
+        BusSpecified   = $busSpecified
+        DevFnSpecified = $devFnSpecified
+    }
+}
+
 function Read-SmbiosTable {
     $raw = [NvmeSlotSmbiosReader]::ReadRawTable()
     if ($raw.Length -lt 8) { throw 'The SMBIOS table returned by firmware is too small.' }
@@ -447,6 +465,10 @@ function Read-SmbiosTable {
                     $widthName = if ($script:SlotWidthNames.ContainsKey($widthCode)) { $script:SlotWidthNames[$widthCode] } else { ('Width 0x{0:X2}' -f $widthCode) }
                     $usageName = if ($script:SlotUsageNames.ContainsKey($usageCode)) { $script:SlotUsageNames[$usageCode] } else { ('Usage 0x{0:X2}' -f $usageCode) }
 
+                    # SMBIOS stores the bus address as segment:bus:device.function.
+                    # See Get-SlotAddressFlags for the "specified" semantics.
+                    $addressFlags = Get-SlotAddressFlags -Bus $bus -DevFn $devFn
+
                     [void]$result.Slots.Add([pscustomobject]@{
                         Index         = $result.Slots.Count
                         Designation   = Get-SmbiosString $strings ([int]$raw[$offset + 4])
@@ -460,8 +482,8 @@ function Read-SmbiosTable {
                         Segment       = $segment
                         Bus           = $bus
                         DevFn         = $devFn
-                        BusSpecified  = ($bus -ne 0 -and $bus -ne 0xFF)
-                        DevFnSpecified = ($devFn -ne 0 -and $devFn -ne 0xFF)
+                        BusSpecified  = $addressFlags.BusSpecified
+                        DevFnSpecified = $addressFlags.DevFnSpecified
                         IsM2          = (Test-IsM2SlotType -TypeCode $typeCode)
                         # Only connector types that explicitly describe PCI/PCIe-capable
                         # expansion interfaces participate in PCIe endpoint matching.
